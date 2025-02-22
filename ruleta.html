@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ruleta Personalizada</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            background: linear-gradient(to right, #ff9966, #ff5e62);
+            color: white;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            max-width: 400px;
+            margin: auto;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.5);
+        }
+        canvas {
+            border: 3px solid white;
+            background: #fff;
+            border-radius: 50%;
+        }
+        .indicator {
+            width: 0;
+            height: 0;
+            border-left: 15px solid transparent;
+            border-right: 15px solid transparent;
+            border-bottom: 30px solid yellow;
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+        button {
+            background: #ff5e62;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            color: white;
+            cursor: pointer;
+            border-radius: 5px;
+            margin: 10px 5px;
+            width: calc(50% - 10px);
+            transition: 0.3s;
+        }
+        button:hover {
+            background: #ff9966;
+        }
+        input {
+            width: calc(100% - 20px);
+            padding: 10px;
+            margin: 5px 0;
+            border: none;
+            border-radius: 5px;
+            text-align: center;
+            background: #fff;
+            color: #333;
+        }
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .button-group {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .resultado-box {
+            display: none;
+            background: #4CAF50;
+            color: white;
+            padding: 15px;
+            font-size: 20px;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.8); }
+            to { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Ruleta Personalizada</h1>
+        <label for="numCasillas">Número de Casillas:</label>
+        <input type="number" id="numCasillas" min="2" max="20" value="6">
+        
+        <div class="button-group">
+            <button onclick="generarEntradas()">Generar</button>
+            <button onclick="limpiarRuleta()">Limpiar</button>
+        </div>
+
+        <div id="entradas" class="input-container"></div>
+        
+        <button onclick="crearRuleta()">Crear Ruleta</button>
+        
+        <div class="indicator"></div>
+        <canvas id="ruleta" width="300" height="300"></canvas>
+        
+        <button onclick="girarRuleta()">Girar</button>
+        <div id="resultado" class="resultado-box"></div>
+    </div>
+
+    <script>
+        let datosRuleta = [];
+        let anguloActual = 0;
+        let ctx = document.getElementById("ruleta").getContext("2d");
+        let girando = false;
+
+        function generarEntradas() {
+            let num = document.getElementById("numCasillas").value;
+            let contenedor = document.getElementById("entradas");
+            contenedor.innerHTML = "";
+            for (let i = 0; i < num; i++) {
+                let input = document.createElement("input");
+                input.type = "text";
+                input.id = `casilla${i}`;
+                input.placeholder = `Casilla ${i + 1}`;
+                contenedor.appendChild(input);
+            }
+        }
+
+        function crearRuleta() {
+            let num = document.getElementById("numCasillas").value;
+            datosRuleta = [];
+            for (let i = 0; i < num; i++) {
+                datosRuleta.push(document.getElementById(`casilla${i}`).value || `Casilla ${i+1}`);
+            }
+            dibujarRuleta();
+        }
+
+        function dibujarRuleta() {
+            let num = datosRuleta.length;
+            let radio = 150;
+            let anguloInicio = 0;
+            ctx.clearRect(0, 0, 300, 300);
+            
+            for (let i = 0; i < num; i++) {
+                let angulo = (2 * Math.PI) / num;
+                ctx.beginPath();
+                ctx.moveTo(150, 150);
+                ctx.arc(150, 150, radio, anguloInicio, anguloInicio + angulo);
+                ctx.fillStyle = `hsl(${(i * 360) / num}, 100%, 60%)`;
+                ctx.fill();
+                ctx.stroke();
+                ctx.closePath();
+
+                ctx.fillStyle = "white";
+                ctx.textAlign = "center";
+                ctx.font = "bold 14px Arial";
+                let textX = 150 + Math.cos(anguloInicio + angulo / 2) * (radio / 1.5);
+                let textY = 150 + Math.sin(anguloInicio + angulo / 2) * (radio / 1.5);
+                ctx.fillText(datosRuleta[i], textX, textY);
+                
+                anguloInicio += angulo;
+            }
+        }
+
+        function girarRuleta() {
+            if (girando) return;
+            girando = true;
+            let vueltas = Math.random() * 4 + 4;
+            let tiempo = 0;
+            let intervalo = setInterval(() => {
+                anguloActual += 20;
+                ctx.clearRect(0, 0, 300, 300);
+                ctx.save();
+                ctx.translate(150, 150);
+                ctx.rotate(anguloActual * Math.PI / 180);
+                ctx.translate(-150, -150);
+                dibujarRuleta();
+                ctx.restore();
+                
+                tiempo += 40;
+                if (tiempo > vueltas * 900) {
+                    clearInterval(intervalo);
+                    let indice = Math.floor(((anguloActual % 360) / 360) * datosRuleta.length);
+                    mostrarResultado(datosRuleta[indice]);
+                    girando = false;
+                }
+            }, 40);
+        }
+
+        function mostrarResultado(texto) {
+            let resultadoBox = document.getElementById("resultado");
+            resultadoBox.innerText = `Resultado: ${texto}`;
+            resultadoBox.style.display = "block";
+        }
+
+        function limpiarRuleta() {
+            document.getElementById("numCasillas").value = "6";
+            document.getElementById("entradas").innerHTML = "";
+            datosRuleta = [];
+            anguloActual = 0;
+            ctx.clearRect(0, 0, 300, 300);
+            document.getElementById("resultado").style.display = "none";
+        }
+    </script>
+</body>
+</html>
